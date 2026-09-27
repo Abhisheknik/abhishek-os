@@ -8,8 +8,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_ANON_KEY;
 
   if (!url || !key) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
@@ -18,8 +18,10 @@ export async function POST(request: Request) {
   const sb = createClient(url, key);
 
   try {
+    const errors: Record<string, string> = {};
+
     // Seed profile
-    await sb.from("portfolio_profile").upsert({
+    const { error: profileErr } = await sb.from("portfolio_profile").upsert({
       id: 1,
       name: portfolio.profile.name,
       title: portfolio.profile.title,
@@ -28,6 +30,7 @@ export async function POST(request: Request) {
       email: portfolio.profile.email,
       summary: portfolio.profile.summary,
     });
+    if (profileErr) errors.profile = profileErr.message;
 
     // Seed projects
     const projects = portfolio.projects.map((p, i) => ({
@@ -43,7 +46,8 @@ export async function POST(request: Request) {
       tech: { ...p.tech },
       sort_order: i,
     }));
-    await sb.from("portfolio_projects").upsert(projects);
+    const { error: projectsErr } = await sb.from("portfolio_projects").upsert(projects);
+    if (projectsErr) errors.projects = projectsErr.message;
 
     // Seed experience
     const experience = portfolio.experience.map((e, i) => ({
@@ -54,7 +58,8 @@ export async function POST(request: Request) {
       highlights: [...e.highlights],
       sort_order: i,
     }));
-    await sb.from("portfolio_experience").upsert(experience, { onConflict: "company" });
+    const { error: expErr } = await sb.from("portfolio_experience").upsert(experience, { onConflict: "company" });
+    if (expErr) errors.experience = expErr.message;
 
     // Seed certifications
     const certs = portfolio.certifications.map((c, i) => ({
@@ -67,7 +72,12 @@ export async function POST(request: Request) {
       skills: "skills" in c ? [...(c.skills as readonly string[])] : [],
       sort_order: i,
     }));
-    await sb.from("portfolio_certifications").upsert(certs, { onConflict: "name" });
+    const { error: certsErr } = await sb.from("portfolio_certifications").upsert(certs, { onConflict: "name" });
+    if (certsErr) errors.certifications = certsErr.message;
+
+    if (Object.keys(errors).length > 0) {
+      return NextResponse.json({ ok: false, errors }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true, seeded: { projects: projects.length, experience: experience.length, certs: certs.length } });
   } catch (err) {

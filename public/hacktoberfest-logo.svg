@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="48" fill="#183d5d"/>
+  <text x="50" y="38" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="13" fill="#ffffff">&lt;/&gt;</text>
+  <text x="50" y="56" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="9" fill="#ff6b9d">HACKTOBER</text>
+  <text x="50" y="68" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="9" fill="#ff6b9d">FEST</text>
+</svg>
